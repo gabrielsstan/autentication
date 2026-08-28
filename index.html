@@ -102,6 +102,15 @@
       animation: spin 1s ease-in-out infinite;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
+    .info-box {
+      background: #e8f4fd;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      font-size: 13px;
+      color: #0c5460;
+      word-break: break-all;
+    }
   </style>
 </head>
 <body>
@@ -110,6 +119,9 @@
       <h1>🔑 Redefinir Senha</h1>
       <p>Digite sua nova senha para continuar</p>
     </div>
+
+    <!-- 🔹 MOSTRA O TOKEN (SÓ PARA DEBUG) -->
+    <div id="tokenInfo" class="info-box hidden"></div>
 
     <div id="message" class="message hidden"></div>
 
@@ -142,30 +154,17 @@
     <a href="#" class="back-link" onclick="window.history.back()">← Voltar</a>
   </div>
 
-  <!-- 🔹 CARREGA O SUPABASE DE FORMA DIFERENTE -->
-  <script type="importmap">
-    {
-      "imports": {
-        "@supabase/supabase-js": "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm"
-      }
-    }
-  </script>
-
-  <script type="module">
-    // 🔹 IMPORTA O SUPABASE COMO MÓDULO (NÃO USA VARIÁVEL GLOBAL)
-    import { createClient } from '@supabase/supabase-js';
-
+  <script>
+    // 🔹 CONFIGURAÇÃO
     const SUPABASE_URL = 'https://ksgwjngawlppaoarzuob.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_aEwUdVLlYG87yCdZSuV9ZQ_9XUlIZrl';
-
-    // Cria o cliente Supabase
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const form = document.getElementById('resetForm');
     const passwordInput = document.getElementById('password');
     const confirmInput = document.getElementById('confirmPassword');
     const submitBtn = document.getElementById('submitBtn');
     const messageDiv = document.getElementById('message');
+    const tokenInfoDiv = document.getElementById('tokenInfo');
 
     function showMessage(text, type) {
       messageDiv.textContent = text;
@@ -180,20 +179,51 @@
     // 🔹 PEGA O TOKEN DA URL
     function getTokenFromUrl() {
       const params = new URLSearchParams(window.location.search);
+      // O token pode vir como access_token ou token
       const token = params.get('access_token') || params.get('token');
-      console.log('🔑 Token encontrado:', token);
+      console.log('🔑 Token encontrado:', token ? token.substring(0, 20) + '...' : 'NENHUM');
       return token;
     }
 
-    // 🔹 INICIALIZAÇÃO
-    document.addEventListener('DOMContentLoaded', () => {
+    // 🔹 PEGA O EMAIL DO USUÁRIO (SE DISPONÍVEL)
+    function getEmailFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('email') || 'Usuário';
+    }
+
+    // 🔹 INICIALIZAÇÃO - MOSTRA INFORMAÇÕES
+    document.addEventListener('DOMContentLoaded', async () => {
       const token = getTokenFromUrl();
+      const email = getEmailFromUrl();
       
       if (!token) {
         showMessage('⚠️ Link inválido ou expirado. Solicite um novo link de redefinição.', 'error');
         submitBtn.disabled = true;
+        tokenInfoDiv.textContent = '❌ Nenhum token encontrado na URL';
+        tokenInfoDiv.classList.remove('hidden');
       } else {
+        // Mostra o token (parcial) para debug
+        tokenInfoDiv.textContent = `🔑 Token: ${token.substring(0, 15)}... (para ${email || 'usuário'})`;
+        tokenInfoDiv.classList.remove('hidden');
         showMessage('✅ Link válido! Digite sua nova senha.', 'info');
+        
+        // 🔹 TENTA OBTER O EMAIL DO USUÁRIO VIA API
+        try {
+          const response = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'apikey': SUPABASE_ANON_KEY
+            }
+          });
+          
+          if (response.ok) {
+            const userData = await response.json();
+            console.log('👤 Usuário autenticado:', userData.email);
+            tokenInfoDiv.textContent = `👤 Redefinindo senha para: ${userData.email}`;
+          }
+        } catch (error) {
+          console.log('Não foi possível buscar dados do usuário:', error);
+        }
       }
     });
 
@@ -220,25 +250,37 @@
         const token = getTokenFromUrl();
         
         if (!token) {
-          throw new Error('Token de redefinição não encontrado. Solicite um novo link.');
+          throw new Error('Token de redefinição não encontrado.');
         }
 
-        console.log('🔄 Atualizando senha...');
+        console.log('🔄 Atualizando senha via API REST...');
+        console.log('🔑 Token usado:', token.substring(0, 20) + '...');
 
-        // 🔹 ATUALIZA A SENHA
-        const { data, error } = await supabase.auth.updateUser({
-          password: password
+        // 🔹 CHAMA A API DO SUPABASE PARA ATUALIZAR A SENHA
+        const response = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            password: password
+          })
         });
 
-        if (error) {
-          console.error('❌ Erro do Supabase:', error);
-          throw new Error(error.message || 'Erro ao redefinir senha.');
+        const result = await response.json();
+
+        if (!response.ok) {
+          console.error('❌ Erro da API:', result);
+          throw new Error(result.message || result.error?.message || 'Erro ao redefinir senha.');
         }
 
-        console.log('✅ Senha atualizada com sucesso!', data);
+        console.log('✅ Senha atualizada com sucesso!', result);
 
         showMessage('✅ Senha redefinida com sucesso!', 'success');
 
+        // Redireciona após 3 segundos
         setTimeout(() => {
           window.location.href = 'minhadispensa://login';
         }, 3000);
@@ -251,8 +293,9 @@
       }
     });
 
-    console.log('📄 Página de reset carregada (modo ES Module)');
+    console.log('📄 Página de reset carregada');
     console.log('🔗 URL atual:', window.location.href);
+    console.log('🔑 Token na URL:', getTokenFromUrl() ? '✅ Presente' : '❌ Ausente');
   </script>
 </body>
 </html>
