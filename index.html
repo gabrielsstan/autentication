@@ -109,6 +109,15 @@
       animation: spin 1s ease-in-out infinite;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
+    .debug-box {
+      background: #f5f0eb;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 16px;
+      word-break: break-all;
+    }
   </style>
 </head>
 <body>
@@ -120,6 +129,9 @@
 
     <!-- Mensagens -->
     <div id="message" class="message hidden"></div>
+    
+    <!-- Debug (remova depois que funcionar) -->
+    <div id="debug" class="debug-box hidden"></div>
 
     <!-- Formulário -->
     <form id="resetForm">
@@ -164,6 +176,7 @@
     const confirmInput = document.getElementById('confirmPassword');
     const submitBtn = document.getElementById('submitBtn');
     const messageDiv = document.getElementById('message');
+    const debugDiv = document.getElementById('debug');
 
     function showMessage(text, type) {
       messageDiv.textContent = text;
@@ -175,11 +188,32 @@
       messageDiv.classList.add('hidden');
     }
 
+    function showDebug(text) {
+      debugDiv.textContent = text;
+      debugDiv.classList.remove('hidden');
+    }
+
     // 🔹 PEGA O TOKEN DA URL
     function getTokenFromUrl() {
       const params = new URLSearchParams(window.location.search);
-      return params.get('access_token') || params.get('token');
+      const token = params.get('access_token') || params.get('token');
+      console.log('🔑 Token encontrado:', token);
+      return token;
     }
+
+    // 🔹 INICIALIZAÇÃO - Verifica token
+    document.addEventListener('DOMContentLoaded', () => {
+      const token = getTokenFromUrl();
+      
+      if (!token) {
+        showMessage('⚠️ Link inválido ou expirado. Solicite um novo link de redefinição.', 'error');
+        submitBtn.disabled = true;
+        showDebug('Nenhum token encontrado na URL');
+      } else {
+        showDebug(`Token encontrado: ${token.substring(0, 10)}...`);
+        showMessage('✅ Link válido! Digite sua nova senha.', 'info');
+      }
+    });
 
     // 🔹 REDEFINIR SENHA
     form.addEventListener('submit', async (e) => {
@@ -207,15 +241,19 @@
           throw new Error('Token de redefinição não encontrado. Solicite um novo link.');
         }
 
-        // 🔹 ATUALIZA A SENHA
+        console.log('🔄 Atualizando senha com token:', token);
+
+        // 🔹 IMPORTANTE: Atualiza a senha com o token
         const { data, error } = await supabase.auth.updateUser({
           password: password
         });
 
         if (error) {
-          console.error('❌ Erro:', error);
+          console.error('❌ Erro do Supabase:', error);
           throw new Error(error.message || 'Erro ao redefinir senha.');
         }
+
+        console.log('✅ Senha atualizada com sucesso!', data);
 
         showMessage('✅ Senha redefinida com sucesso!', 'success');
 
@@ -232,14 +270,10 @@
       }
     });
 
-    // Verifica se tem token na URL
-    document.addEventListener('DOMContentLoaded', () => {
-      const token = getTokenFromUrl();
-      if (!token) {
-        showMessage('Link inválido ou expirado. Solicite um novo link de redefinição.', 'error');
-        submitBtn.disabled = true;
-      }
-    });
+    // 🔹 Log para debug
+    console.log('📄 Página de reset carregada');
+    console.log('🔗 URL atual:', window.location.href);
+    console.log('🔑 Token:', getTokenFromUrl());
   </script>
 </body>
 </html>
