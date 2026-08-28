@@ -72,13 +72,6 @@
     }
     .btn:hover { background: #8a634b; }
     .btn:disabled { opacity: 0.6; cursor: not-allowed; }
-    .btn-secondary {
-      background: transparent;
-      color: #ab7a5e;
-      border: 2px solid #ab7a5e;
-      margin-top: 10px;
-    }
-    .btn-secondary:hover { background: #f9efe2; }
     .message {
       padding: 12px;
       border-radius: 8px;
@@ -109,15 +102,6 @@
       animation: spin 1s ease-in-out infinite;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .debug-box {
-      background: #f5f0eb;
-      padding: 12px;
-      border-radius: 8px;
-      font-size: 12px;
-      color: #666;
-      margin-bottom: 16px;
-      word-break: break-all;
-    }
   </style>
 </head>
 <body>
@@ -128,7 +112,6 @@
     </div>
 
     <div id="message" class="message hidden"></div>
-    <div id="debug" class="debug-box hidden"></div>
 
     <form id="resetForm">
       <div class="input-group">
@@ -159,22 +142,30 @@
     <a href="#" class="back-link" onclick="window.history.back()">← Voltar</a>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+  <!-- 🔹 CARREGA O SUPABASE DE FORMA DIFERENTE -->
+  <script type="importmap">
+    {
+      "imports": {
+        "@supabase/supabase-js": "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm"
+      }
+    }
   </script>
-  <script>
-    // 🔹 CONFIGURAÇÃO - USANDO window.supabaseJs EM VEZ DE supabase
+
+  <script type="module">
+    // 🔹 IMPORTA O SUPABASE COMO MÓDULO (NÃO USA VARIÁVEL GLOBAL)
+    import { createClient } from '@supabase/supabase-js';
+
     const SUPABASE_URL = 'https://ksgwjngawlppaoarzuob.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_aEwUdVLlYG87yCdZSuV9ZQ_9XUlIZrl';
 
-    // Cria o cliente Supabase usando o objeto global
-    const supabaseClient = window.supabaseJs.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // Cria o cliente Supabase
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const form = document.getElementById('resetForm');
     const passwordInput = document.getElementById('password');
     const confirmInput = document.getElementById('confirmPassword');
     const submitBtn = document.getElementById('submitBtn');
     const messageDiv = document.getElementById('message');
-    const debugDiv = document.getElementById('debug');
 
     function showMessage(text, type) {
       messageDiv.textContent = text;
@@ -184,11 +175,6 @@
 
     function hideMessage() {
       messageDiv.classList.add('hidden');
-    }
-
-    function showDebug(text) {
-      debugDiv.textContent = text;
-      debugDiv.classList.remove('hidden');
     }
 
     // 🔹 PEGA O TOKEN DA URL
@@ -206,9 +192,7 @@
       if (!token) {
         showMessage('⚠️ Link inválido ou expirado. Solicite um novo link de redefinição.', 'error');
         submitBtn.disabled = true;
-        showDebug('Nenhum token encontrado na URL');
       } else {
-        showDebug(`Token encontrado: ${token.substring(0, 10)}...`);
         showMessage('✅ Link válido! Digite sua nova senha.', 'info');
       }
     });
@@ -239,10 +223,10 @@
           throw new Error('Token de redefinição não encontrado. Solicite um novo link.');
         }
 
-        console.log('🔄 Atualizando senha com token:', token);
+        console.log('🔄 Atualizando senha...');
 
         // 🔹 ATUALIZA A SENHA
-        const { data, error } = await supabaseClient.auth.updateUser({
+        const { data, error } = await supabase.auth.updateUser({
           password: password
         });
 
@@ -267,7 +251,7 @@
       }
     });
 
-    console.log('📄 Página de reset carregada');
+    console.log('📄 Página de reset carregada (modo ES Module)');
     console.log('🔗 URL atual:', window.location.href);
   </script>
 </body>
