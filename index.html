@@ -120,9 +120,7 @@
       <p>Digite sua nova senha para continuar</p>
     </div>
 
-    <!-- 🔹 MOSTRA O TOKEN (SÓ PARA DEBUG) -->
     <div id="tokenInfo" class="info-box hidden"></div>
-
     <div id="message" class="message hidden"></div>
 
     <form id="resetForm">
@@ -176,25 +174,44 @@
       messageDiv.classList.add('hidden');
     }
 
-    // 🔹 PEGA O TOKEN DA URL
+    // 🔹 FUNÇÃO CORRIGIDA: PEGA O TOKEN DA URL (LÊ TANTO ? QUANTO #)
     function getTokenFromUrl() {
+      // Tenta ler da query string (?) primeiro
       const params = new URLSearchParams(window.location.search);
-      // O token pode vir como access_token ou token
-      const token = params.get('access_token') || params.get('token');
-      console.log('🔑 Token encontrado:', token ? token.substring(0, 20) + '...' : 'NENHUM');
+      let token = params.get('access_token') || params.get('token');
+      
+      // Se não encontrou na query string, tenta no hash (#)
+      if (!token && window.location.hash) {
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        token = hashParams.get('access_token') || hashParams.get('token');
+        console.log('🔑 Token encontrado no HASH:', token ? '✅' : '❌');
+      }
+      
+      console.log('🔑 Token final:', token ? token.substring(0, 30) + '...' : 'NENHUM');
       return token;
     }
 
-    // 🔹 PEGA O EMAIL DO USUÁRIO (SE DISPONÍVEL)
-    function getEmailFromUrl() {
+    // 🔹 FUNÇÃO CORRIGIDA: PEGA O EMAIL DO USUÁRIO DA URL
+    function getUserEmailFromUrl() {
+      // Tenta ler da query string (?)
       const params = new URLSearchParams(window.location.search);
-      return params.get('email') || 'Usuário';
+      let email = params.get('email');
+      
+      // Se não encontrou na query string, tenta no hash (#)
+      if (!email && window.location.hash) {
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        email = hashParams.get('email');
+      }
+      
+      return email;
     }
 
-    // 🔹 INICIALIZAÇÃO - MOSTRA INFORMAÇÕES
+    // 🔹 INICIALIZAÇÃO
     document.addEventListener('DOMContentLoaded', async () => {
       const token = getTokenFromUrl();
-      const email = getEmailFromUrl();
+      const email = getUserEmailFromUrl();
+      
+      console.log('📧 Email encontrado:', email || 'NÃO ENCONTRADO');
       
       if (!token) {
         showMessage('⚠️ Link inválido ou expirado. Solicite um novo link de redefinição.', 'error');
@@ -202,8 +219,7 @@
         tokenInfoDiv.textContent = '❌ Nenhum token encontrado na URL';
         tokenInfoDiv.classList.remove('hidden');
       } else {
-        // Mostra o token (parcial) para debug
-        tokenInfoDiv.textContent = `🔑 Token: ${token.substring(0, 15)}... (para ${email || 'usuário'})`;
+        tokenInfoDiv.textContent = `🔑 Token válido encontrado!`;
         tokenInfoDiv.classList.remove('hidden');
         showMessage('✅ Link válido! Digite sua nova senha.', 'info');
         
@@ -220,9 +236,11 @@
             const userData = await response.json();
             console.log('👤 Usuário autenticado:', userData.email);
             tokenInfoDiv.textContent = `👤 Redefinindo senha para: ${userData.email}`;
+          } else {
+            console.log('⚠️ Não foi possível buscar dados do usuário');
           }
         } catch (error) {
-          console.log('Não foi possível buscar dados do usuário:', error);
+          console.log('⚠️ Erro ao buscar dados do usuário:', error);
         }
       }
     });
@@ -254,7 +272,6 @@
         }
 
         console.log('🔄 Atualizando senha via API REST...');
-        console.log('🔑 Token usado:', token.substring(0, 20) + '...');
 
         // 🔹 CHAMA A API DO SUPABASE PARA ATUALIZAR A SENHA
         const response = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
