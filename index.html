@@ -127,13 +127,9 @@
       <p>Digite sua nova senha para continuar</p>
     </div>
 
-    <!-- Mensagens -->
     <div id="message" class="message hidden"></div>
-    
-    <!-- Debug (remova depois que funcionar) -->
     <div id="debug" class="debug-box hidden"></div>
 
-    <!-- Formulário -->
     <form id="resetForm">
       <div class="input-group">
         <label for="password">Nova Senha</label>
@@ -163,13 +159,15 @@
     <a href="#" class="back-link" onclick="window.history.back()">← Voltar</a>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+  </script>
   <script>
-    // 🔹 CONFIGURAÇÃO
+    // 🔹 CONFIGURAÇÃO - USANDO window.supabaseJs EM VEZ DE supabase
     const SUPABASE_URL = 'https://ksgwjngawlppaoarzuob.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_aEwUdVLlYG87yCdZSuV9ZQ_9XUlIZrl';
 
-    const supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // Cria o cliente Supabase usando o objeto global
+    const supabaseClient = window.supabaseJs.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const form = document.getElementById('resetForm');
     const passwordInput = document.getElementById('password');
@@ -201,7 +199,7 @@
       return token;
     }
 
-    // 🔹 INICIALIZAÇÃO - Verifica token
+    // 🔹 INICIALIZAÇÃO
     document.addEventListener('DOMContentLoaded', () => {
       const token = getTokenFromUrl();
       
@@ -243,8 +241,8 @@
 
         console.log('🔄 Atualizando senha com token:', token);
 
-        // 🔹 IMPORTANTE: Atualiza a senha com o token
-        const { data, error } = await supabase.auth.updateUser({
+        // 🔹 ATUALIZA A SENHA
+        const { data, error } = await supabaseClient.auth.updateUser({
           password: password
         });
 
@@ -257,7 +255,6 @@
 
         showMessage('✅ Senha redefinida com sucesso!', 'success');
 
-        // Redireciona após 3 segundos
         setTimeout(() => {
           window.location.href = 'minhadispensa://login';
         }, 3000);
@@ -270,10 +267,8 @@
       }
     });
 
-    // 🔹 Log para debug
     console.log('📄 Página de reset carregada');
     console.log('🔗 URL atual:', window.location.href);
-    console.log('🔑 Token:', getTokenFromUrl());
   </script>
 </body>
 </html>
