@@ -13,12 +13,12 @@
       justify-content: center;
       align-items: start;
       min-height: 100vh;
-      padding: 4rem;
+      padding: 4rem 1rem;
     }
     .container {
       background: white;
       border-radius: 24px;
-      padding: 40px;
+      padding: 10px;
       max-width: 420px;
       width: 100%;
       box-shadow: 0 8px 32px rgba(0,0,0,0.1);
@@ -325,7 +325,7 @@
         passwordInput.value = '';
         confirmInput.value = '';
         
-        showMessage('✅ Senha redefinida com sucesso! Você será redirecionado em alguns segundos...', 'success');
+        showMessage('✅ Senha redefinida com sucesso! Você pode retornar ao APP e fazer o login', 'success');
 
         // Redireciona após 3 segundos
         setTimeout(() => {
