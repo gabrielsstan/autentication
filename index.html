@@ -11,9 +11,9 @@
       background: #f9efe2;
       display: flex;
       justify-content: center;
-      align-items: center;
+      align-items: start;
       min-height: 100vh;
-      padding: 20px;
+      padding: 4rem;
     }
     .container {
       background: white;
@@ -111,6 +111,14 @@
       color: #0c5460;
       word-break: break-all;
     }
+    /* Estilo para o botão desabilitado após sucesso */
+    .btn-success {
+      background: #28a745 !important;
+      cursor: default !important;
+    }
+    .btn-success:hover {
+      background: #28a745 !important;
+    }
   </style>
 </head>
 <body>
@@ -149,7 +157,7 @@
       </button>
     </form>
 
-    <a href="#" class="back-link" onclick="window.history.back()">← Voltar</a>
+    <!-- <a href="#" class="back-link" onclick="window.history.back()">← Voltar</a> -->
   </div>
 
   <script>
@@ -172,6 +180,20 @@
 
     function hideMessage() {
       messageDiv.classList.add('hidden');
+    }
+
+    // 🔹 FUNÇÃO PARA RESTAURAR O BOTÃO AO ESTADO NORMAL
+    function resetButtonState() {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = 'Redefinir Senha';
+      submitBtn.className = 'btn';
+    }
+
+    // 🔹 FUNÇÃO PARA DESABILITAR O BOTÃO PERMANENTEMENTE (APÓS SUCESSO)
+    function disableButtonPermanently() {
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '✅ Senha redefinida!';
+      submitBtn.className = 'btn btn-success';
     }
 
     // 🔹 FUNÇÃO CORRIGIDA: PEGA O TOKEN DA URL (LÊ TANTO ? QUANTO #)
@@ -261,6 +283,7 @@
         return showMessage('As senhas não conferem.', 'error');
       }
 
+      // Desabilita o botão e mostra loading
       submitBtn.disabled = true;
       submitBtn.innerHTML = '<span class="spinner"></span> Atualizando...';
 
@@ -295,7 +318,14 @@
 
         console.log('✅ Senha atualizada com sucesso!', result);
 
-        showMessage('✅ Senha redefinida com sucesso!', 'success');
+        // ✅ SUCESSO: desabilita permanentemente o botão e mostra mensagem de sucesso
+        disableButtonPermanently();
+        
+        // Limpa os campos de senha por segurança
+        passwordInput.value = '';
+        confirmInput.value = '';
+        
+        showMessage('✅ Senha redefinida com sucesso! Você será redirecionado em alguns segundos...', 'success');
 
         // Redireciona após 3 segundos
         setTimeout(() => {
@@ -305,8 +335,9 @@
       } catch (error) {
         console.error('❌ Erro:', error);
         showMessage(error.message || 'Erro ao redefinir senha. Tente novamente.', 'error');
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Redefinir Senha';
+        
+        // Restaura o botão apenas em caso de erro
+        resetButtonState();
       }
     });
 
