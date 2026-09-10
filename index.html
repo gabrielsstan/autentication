@@ -112,7 +112,6 @@
       color: #0c5460;
       word-break: break-all;
     }
-    /* Estilo para o botão desabilitado após sucesso */
     .btn-success {
       background: #28a745 !important;
       cursor: default !important;
@@ -160,11 +159,9 @@
       </button>
     </form>
 
-    <!-- <a href="#" class="back-link" onclick="window.history.back()">← Voltar</a> -->
   </div>
 
   <script>
-    // 🔹 CONFIGURAÇÃO
     const SUPABASE_URL = 'https://ksgwjngawlppaoarzuob.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_aEwUdVLlYG87yCdZSuV9ZQ_9XUlIZrl';
 
@@ -187,14 +184,12 @@
       messageDiv.classList.add('hidden');
     }
 
-    // 🔹 FUNÇÃO PARA RESTAURAR O BOTÃO AO ESTADO NORMAL
     function resetButtonState() {
       submitBtn.disabled = false;
       submitBtn.innerHTML = 'Redefinir Senha';
       submitBtn.className = 'btn';
     }
 
-    // 🔹 FUNÇÃO PARA DESABILITAR O BOTÃO PERMANENTEMENTE (APÓS SUCESSO)
     function disableButtonPermanently() {
       submitBtn.disabled = true;
       submitBtn.innerHTML = '✅ Senha redefinida!';
@@ -227,7 +222,6 @@
           sessionStorage.setItem(RESET_TOKEN_STORAGE_KEY, token);
         }
       } catch (error) {
-        // O fluxo continua funcionando enquanto a página permanecer aberta.
       }
     }
 
@@ -235,7 +229,6 @@
       try {
         sessionStorage.removeItem(RESET_TOKEN_STORAGE_KEY);
       } catch (error) {
-        // Não interrompe a redefinição se o armazenamento estiver indisponível.
       }
     }
 
@@ -244,7 +237,6 @@
       window.history.replaceState({}, document.title, cleanUrl);
     }
 
-    // 🔹 INICIALIZAÇÃO
     document.addEventListener('DOMContentLoaded', async () => {
       const token = getTokenFromUrl() || getStoredResetToken();
 
@@ -264,7 +256,6 @@
       resetToken = token || '';
     });
 
-    // 🔹 REDEFINIR SENHA
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       hideMessage();
@@ -280,7 +271,6 @@
         return showMessage('As senhas não conferem.', 'error');
       }
 
-      // Desabilita o botão e mostra loading
       submitBtn.disabled = true;
       submitBtn.innerHTML = '<span class="spinner"></span> Atualizando...';
 
@@ -291,7 +281,6 @@
           throw new Error('Token de redefinição não encontrado.');
         }
 
-        // 🔹 CHAMA A API DO SUPABASE PARA ATUALIZAR A SENHA
         const response = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
           method: 'PUT',
           headers: {
@@ -310,10 +299,8 @@
           throw new Error(result.message || result.error?.message || 'Erro ao redefinir senha.');
         }
 
-        // ✅ SUCESSO: desabilita permanentemente o botão e mostra mensagem de sucesso
         disableButtonPermanently();
         
-        // Limpa os campos de senha por segurança
         passwordInput.value = '';
         confirmInput.value = '';
         removeStoredResetToken();
@@ -321,7 +308,6 @@
         
         showMessage('✅ Senha redefinida com sucesso! Você pode retornar ao APP e fazer o login', 'success');
 
-        // Redireciona após 3 segundos
         setTimeout(() => {
           window.location.href = 'minhadispensa://login';
         }, 3000);
@@ -329,7 +315,6 @@
       } catch (error) {
         showMessage(error.message || 'Erro ao redefinir senha. Tente novamente.', 'error');
         
-        // Restaura o botão apenas em caso de erro
         resetButtonState();
       }
     });
